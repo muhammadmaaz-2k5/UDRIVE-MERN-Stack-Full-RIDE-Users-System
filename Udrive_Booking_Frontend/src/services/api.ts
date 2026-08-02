@@ -68,5 +68,33 @@ export const api = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async acceptRide(token: string, rideId: string, vehicleData: any): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/ride/accept/${rideId}`, {
+        method: 'PATCH',
+        headers: getHeaders(token),
+        body: JSON.stringify(vehicleData),
+      });
+      if (!response.ok) throw new Error('Failed to accept ride');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async updateRideStatus(token: string, rideId: string, status: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/ride/update/${rideId}`, {
+        method: 'PATCH',
+        headers: getHeaders(token),
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error('Failed to update ride status');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
   }
 };
