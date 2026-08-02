@@ -6,9 +6,9 @@ import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loader } from '../components/ui/Loader';
-import { MapPin, Navigation, Car, Bike } from 'lucide-react';
+import { MapPin, Navigation, Car, Bike, X } from 'lucide-react';
 import styles from './CustomerDashboard.module.css';
-import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const center = { lat: 40.7128, lng: -74.0060 }; // Default to NY
 
@@ -27,6 +27,7 @@ export const CustomerDashboard: React.FC = () => {
   const [dropoff, setDropoff] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('cabEconomy');
   const [isLoading, setIsLoading] = useState(false);
+  const [riderLocation, setRiderLocation] = useState<{lat: number, lng: number} | null>(null);
   
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -47,9 +48,38 @@ export const CustomerDashboard: React.FC = () => {
       socket.on('rideAccepted', (data) => {
         console.log('Ride accepted!', data);
         setCurrentRide(data.ride);
+        // Subscribe to this specific rider's location updates
+        if (data.ride.rider) {
+          socket.emit('subscribeToriderLocation', data.ride.rider._id || data.ride.rider);
+        }
+      });
+
+      socket.on('riderLocationUpdate', (data) => {
+        setRiderLocation({ lat: data.coords.latitude, lng: data.coords.longitude });
+      });
+
+      socket.on('rideCanceled', () => {
+        setCurrentRide(null);
+        setRiderLocation(null);
+        alert("The ride was canceled.");
+      });
+      
+      // Additional status updates could be handled by a generic rideData update event 
+      // but for now we'll assume the client fetches or listens.
+      socket.on('rideData', (rideData) => {
+        setCurrentRide(rideData);
       });
     }
   }, [accessToken, setCurrentRide]);
+
+  const handleCancelRide = () => {
+    const socket = getSocket();
+    if (socket && currentRide) {
+      socket.emit('cancelRide');
+      setCurrentRide(null);
+      setRiderLocation(null);
+    }
+  };
 
   const handleCreateRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,8 +117,8 @@ export const CustomerDashboard: React.FC = () => {
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={center}
-            zoom={13}
+            center={riderLocation || center}
+            zoom={14}
             options={{
               disableDefaultUI: true,
               styles: [
@@ -98,7 +128,9 @@ export const CustomerDashboard: React.FC = () => {
               ]
             }}
           >
-            {/* Markers will go here */}
+            {riderLocation && (
+              <Marker position={riderLocation} icon={{ url: '/car-icon.svg', scaledSize: new window.google.maps.Size(40, 40) }} />
+            )}
           </GoogleMap>
         ) : (
           <div className={styles.mapPlaceholder}>Loading Map...</div>
@@ -108,10 +140,24 @@ export const CustomerDashboard: React.FC = () => {
       <div className={styles.floatingPanel}>
         {currentRide ? (
           <div>
-            <h2 className={styles.title}>
-              {currentRide.status === 'SEARCHING_FOR_RIDER' ? 'Finding a driver...' : 'Ride in progress'}
-            </h2>
-            <Loader text="Waiting for driver to accept" size={30} />
+            <div className={styles.headerRow}>
+              <h2 className={styles.title}>
+                {currentRide.status === 'SEARCHING_FOR_RIDER' ? 'Finding a driver...' : 
+                 currentRide.status === 'START' ? 'Driver is on the way' : 
+                 currentRide.status === 'ARRIVED' ? 'Driver has arrived!' : 'Ride in progress'}
+              </h2>
+              <button className={styles.cancelButton} onClick={handleCancelRide}><X size={20} /></button>
+            </div>
+            
+            {currentRide.status === 'SEARCHING_FOR_RIDER' ? (
+              <Loader text="Waiting for driver to accept" size={30} />
+            ) : (
+              <div className={styles.rideInfo}>
+                <div className={styles.infoRow}><Car size={18} /> <span>{currentRide.vehicle.toUpperCase()}</span></div>
+                <div className={styles.infoRow}><MapPin size={18} /> <span>{currentRide.pickup.address}</span></div>
+                <div className={styles.infoRow}><Navigation size={18} /> <span>{currentRide.drop.address}</span></div>
+              </div>
+            )}
           </div>
         ) : (
           <form className={styles.form} onSubmit={handleCreateRide}>
