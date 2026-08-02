@@ -11,11 +11,6 @@ This repository contains a Node.js application that enables real-time location t
 <div align="center">
   <img src="https://res.cloudinary.com/dve6uywal/image/upload/v1740041169/js62de3rwhasf8vi2vdv.jpg" alt="App Screenshot" width="600" />
   
-  <br/>
-
-  <a href="https://m.youtube.com/watch?v=u_8-jF01hW8">
-    <img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
-  </a>
 </div>
 
 
