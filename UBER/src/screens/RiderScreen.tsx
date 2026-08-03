@@ -33,6 +33,8 @@ import {
   Bike,
   Truck,
   Car,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { CommunicationBar } from "@/components/ui/CommunicationBar";
 
