@@ -71,11 +71,20 @@ export function formatDateTime(iso: string): string {
   });
 }
 
-export function decodeGeogPoint(geog: string): LatLng | null {
-  // PostGIS geography POINT comes as "POINT(lng lat)" or SRID prefix
-  const match = geog.match(/POINT\?\s*\(([-\d.]+)\s+([-\d.]+)\)/i);
-  if (!match) return null;
-  return { lng: parseFloat(match[1]), lat: parseFloat(match[2]) };
+export function decodeGeogPoint(geog: any): LatLng | null {
+  if (!geog) return null;
+  // Handle GeoJSON format (default in newer PostgREST versions)
+  if (typeof geog === "object" && geog.type === "Point" && Array.isArray(geog.coordinates)) {
+    return { lng: geog.coordinates[0], lat: geog.coordinates[1] };
+  }
+  // Handle WKT string format
+  if (typeof geog === "string") {
+    const match = geog.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
+    if (match) {
+      return { lng: parseFloat(match[1]), lat: parseFloat(match[2]) };
+    }
+  }
+  return null;
 }
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";

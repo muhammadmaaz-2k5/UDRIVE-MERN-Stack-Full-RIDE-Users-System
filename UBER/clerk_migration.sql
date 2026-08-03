@@ -34,7 +34,7 @@ DROP POLICY IF EXISTS "select_call_signals" ON call_signals;
 DROP POLICY IF EXISTS "insert_call_signals" ON call_signals;
 DROP POLICY IF EXISTS "delete_call_signals" ON call_signals;
 
--- 2. Drop constraints
+-- 2. Drop constraints and defaults that return UUID
 ALTER TABLE rides DROP CONSTRAINT IF EXISTS rides_customer_id_fkey;
 ALTER TABLE rides DROP CONSTRAINT IF EXISTS rides_rider_id_fkey;
 ALTER TABLE rider_locations DROP CONSTRAINT IF EXISTS rider_locations_rider_id_fkey;
@@ -44,6 +44,9 @@ ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_receiver_id_fk
 ALTER TABLE call_signals DROP CONSTRAINT IF EXISTS call_signals_caller_id_fkey;
 ALTER TABLE call_signals DROP CONSTRAINT IF EXISTS call_signals_callee_id_fkey;
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
+-- MUST drop this default because auth.uid() returns uuid, which prevents altering to TEXT
+ALTER TABLE rides ALTER COLUMN customer_id DROP DEFAULT;
 
 -- 3. Alter column types to TEXT for Clerk IDs
 ALTER TABLE profiles ALTER COLUMN id TYPE text USING id::text;
@@ -56,7 +59,9 @@ ALTER TABLE chat_messages ALTER COLUMN receiver_id TYPE text USING receiver_id::
 ALTER TABLE call_signals ALTER COLUMN caller_id TYPE text USING caller_id::text;
 ALTER TABLE call_signals ALTER COLUMN callee_id TYPE text USING callee_id::text;
 
--- 4. Recreate Foreign Keys
+-- 4. Recreate Foreign Keys and new Defaults
+ALTER TABLE rides ALTER COLUMN customer_id SET DEFAULT clerk_user_id();
+
 ALTER TABLE rides ADD CONSTRAINT rides_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES profiles(id) ON DELETE CASCADE;
 ALTER TABLE rides ADD CONSTRAINT rides_rider_id_fkey FOREIGN KEY (rider_id) REFERENCES profiles(id) ON DELETE SET NULL;
 ALTER TABLE rider_locations ADD CONSTRAINT rider_locations_rider_id_fkey FOREIGN KEY (rider_id) REFERENCES profiles(id) ON DELETE CASCADE;
