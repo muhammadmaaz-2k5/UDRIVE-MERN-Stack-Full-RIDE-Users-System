@@ -54,6 +54,7 @@ export function RiderScreen() {
   const [route, setRoute] = useState<LatLng[] | null>(null);
   const [history, setHistory] = useState<RideWithParties[]>([]);
   const [stats, setStats] = useState({ today: 0, week: 0, total: 0 });
+  const [panelOpen, setPanelOpen] = useState(true);
   const watchId = useRef<number | null>(null);
 
   // Start geolocation tracking
@@ -484,9 +485,27 @@ export function RiderScreen() {
 
       {/* Bottom dashboard panel */}
       <div className="absolute bottom-0 left-0 right-0 z-[500]">
-        <div className="max-w-2xl mx-auto bg-white rounded-t-3xl shadow-floating udrive-slide-up overflow-hidden">
-          <div className="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-2" />
-          <div className="px-5 pb-5">
+        <div className="max-w-2xl mx-auto bg-white rounded-t-3xl shadow-floating udrive-slide-up overflow-hidden transition-all duration-300 ease-out">
+          <button
+            onClick={() => setPanelOpen((v) => !v)}
+            className="w-full pt-3 pb-1 flex flex-col items-center gap-1.5 hover:bg-slate-50/60 transition"
+          >
+            <div className="w-10 h-1.5 bg-slate-200 rounded-full" />
+            <div className="flex items-center gap-1 text-xs font-semibold text-slate-500">
+              {panelOpen ? (
+                <>
+                  <ChevronDown className="w-4 h-4" /> Hide panel
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="w-4 h-4" /> Show details
+                </>
+              )}
+            </div>
+          </button>
+          
+          {panelOpen && (
+            <div className="px-5 pb-5 udrive-fade-in mt-2">
             {/* Earnings */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <StatBox label="Today" value={formatINR(stats.today)} icon={<Wallet className="w-4 h-4" />} />
@@ -543,6 +562,7 @@ export function RiderScreen() {
                 : "Go on duty to start receiving ride requests"}
             </p>
           </div>
+          )}
         </div>
       </div>
     </div>
