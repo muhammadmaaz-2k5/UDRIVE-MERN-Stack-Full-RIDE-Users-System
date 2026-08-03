@@ -1,18 +1,41 @@
 import React, { useState, useEffect } from 'react'
-import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet';
+
+// Fix for default marker icon in leaflet with bundlers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 const containerStyle = {
     width: '100%',
     height: '100%',
 };
 
-const center = {
+const defaultCenter = {
     lat: -3.745,
     lng: -38.523
 };
 
+const LocationUpdater = ({ position }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (position) {
+            map.flyTo([position.lat, position.lng], map.getZoom(), {
+                animate: true,
+                duration: 1
+            });
+        }
+    }, [position, map]);
+    return null;
+}
+
 const LiveTracking = () => {
-    const [ currentPosition, setCurrentPosition ] = useState(center);
+    const [ currentPosition, setCurrentPosition ] = useState(defaultCenter);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -49,20 +72,24 @@ const LiveTracking = () => {
 
         updatePosition(); // Initial position update
 
-        const intervalId = setInterval(updatePosition, 1000); // Update every 10 seconds
+        const intervalId = setInterval(updatePosition, 1000); // Update every 1 second
 
+        return () => clearInterval(intervalId);
     }, []);
 
     return (
-        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-            <GoogleMap
-                mapContainerStyle={containerStyle}
-                center={currentPosition}
-                zoom={15}
-            >
-                <Marker position={currentPosition} />
-            </GoogleMap>
-        </LoadScript>
+        <MapContainer 
+            center={[currentPosition.lat, currentPosition.lng]} 
+            zoom={15} 
+            style={containerStyle}
+        >
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <Marker position={[currentPosition.lat, currentPosition.lng]} />
+            <LocationUpdater position={currentPosition} />
+        </MapContainer>
     )
 }
 
