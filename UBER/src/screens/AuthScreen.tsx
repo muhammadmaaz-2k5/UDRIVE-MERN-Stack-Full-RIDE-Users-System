@@ -87,7 +87,9 @@ export function AuthScreen() {
           vehicle_plate: role === "rider" ? vehiclePlate : null,
         });
       if (profileError) {
-        toast("error", "Account created but profile setup failed");
+        toast("error", "Account created but profile setup failed. Phone may already be in use.");
+        setLoading(false);
+        return;
       }
     }
     await refreshProfile();
