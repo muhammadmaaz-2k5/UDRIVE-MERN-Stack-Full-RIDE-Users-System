@@ -72,6 +72,19 @@ const Captainlogin = () => {
           >Login</button>
 
         </form>
+        <button
+          onClick={async () => {
+            const captainData = { email: 'testcaptain@test.com', password: 'password123' }
+            const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/login`, captainData)
+            if (response.status === 200) {
+              const data = response.data
+              setCaptain(data.captain)
+              localStorage.setItem('token', data.token)
+              navigate('/captain-home')
+            }
+          }}
+          className='bg-[#333] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
+        >Login as Test Captain</button>
         <p className='text-center'>Join a fleet? <Link to='/captain-signup' className='text-blue-600'>Register as a Captain</Link></p>
       </div>
       <div>
