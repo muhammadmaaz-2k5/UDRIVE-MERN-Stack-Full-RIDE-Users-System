@@ -42,7 +42,8 @@ export function AuthScreen() {
     });
 
     if (profileError) {
-      toast("error", "Profile setup failed. Phone may already be in use.");
+      console.error("Supabase Profile Error:", profileError);
+      toast("error", `Profile setup failed: ${profileError.message}`);
       setLoading(false);
       return;
     }
