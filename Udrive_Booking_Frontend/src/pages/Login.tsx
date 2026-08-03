@@ -28,9 +28,9 @@ export const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const res = await api.login(phone);
-      if (res.user && res.accessToken) {
-        setAuth({ id: res.user._id, phone: res.user.phone, role: res.user.role }, res.accessToken);
+      const res = await api.login(phone, role);
+      if (res.user && res.access_token) {
+        setAuth({ id: res.user._id, phone: res.user.phone, role: res.user.role }, res.access_token);
         navigate(res.user.role === 'rider' ? '/rider-dashboard' : '/customer-dashboard');
       } else {
         setError(res.message || 'Login failed');

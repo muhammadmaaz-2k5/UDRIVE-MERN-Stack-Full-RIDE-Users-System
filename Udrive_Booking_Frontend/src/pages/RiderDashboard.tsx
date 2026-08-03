@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { useRideStore, Ride } from '../store/useRideStore';
+import { useRideStore, type Ride } from '../store/useRideStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { initSocket, getSocket } from '../services/socket';
 import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { Settings } from 'lucide-react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
 import styles from './RiderDashboard.module.css';
 
 const center = { lat: 40.7128, lng: -74.0060 }; // Default NY
 
 export const RiderDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { accessToken } = useAuthStore();
   const { isOnDuty, setIsOnDuty, currentRide, setCurrentRide, updateRideStatus } = useRideStore();
+  const { mapProvider } = useSettingsStore();
   
   const [rideOffer, setRideOffer] = useState<Ride | null>(null);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -96,23 +103,41 @@ export const RiderDashboard: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <button className={styles.settingsButton} onClick={() => navigate('/settings')}>
+        <Settings size={20} />
+      </button>
+
       <div className={styles.mapContainer}>
-        {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={center}
-            zoom={14}
-            options={{
-              disableDefaultUI: true,
-              styles: [
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-              ]
-            }}
-          />
+        {mapProvider === 'google' ? (
+          isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={center}
+              zoom={14}
+              options={{
+                disableDefaultUI: true,
+                styles: [
+                  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+                  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+                  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                ]
+              }}
+            />
+          ) : (
+            <div className={styles.mapPlaceholder}>Loading Google Maps...</div>
+          )
         ) : (
-          <div className={styles.mapPlaceholder}>Loading Map...</div>
+          <MapContainer 
+            center={[center.lat, center.lng]} 
+            zoom={14} 
+            style={{ width: '100%', height: '100%', background: 'var(--bg-primary)' }}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            />
+          </MapContainer>
         )}
       </div>
 

@@ -11,15 +11,15 @@ export interface AuthResponse {
     phone: string;
     role: 'customer' | 'rider';
   };
-  accessToken?: string;
-  refreshToken?: string;
+  access_token?: string;
+  refresh_token?: string;
   message?: string;
 }
 
 export const api = {
   async register(phone: string, role: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, role }),
@@ -30,12 +30,12 @@ export const api = {
     }
   },
 
-  async login(phone: string): Promise<AuthResponse> {
+  async login(phone: string, role: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone, role }),
       });
       return await response.json();
     } catch (error) {

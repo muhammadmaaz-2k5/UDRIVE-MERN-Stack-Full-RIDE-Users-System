@@ -156,3 +156,28 @@ input:checked + .slider:before {
   color: var(--text-muted);
   font-size: var(--font-size-lg);
 }
+
+.settingsButton {
+  position: absolute;
+  top: var(--spacing-6);
+  right: var(--spacing-6);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-2);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+}
+
+.settingsButton:hover {
+  transform: translateY(-2px);
+  background-color: var(--bg-tertiary);
+}
+

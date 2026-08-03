@@ -152,3 +152,55 @@
   border: 1px solid var(--glass-border);
 }
 
+.settingsButton {
+  position: absolute;
+  top: var(--spacing-6);
+  right: var(--spacing-6);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-2);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+}
+
+.settingsButton:hover {
+  transform: translateY(-2px);
+  background-color: var(--bg-tertiary);
+}
+
+.searchTrigger {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.searchTrigger:hover {
+  background-color: var(--bg-secondary);
+}
+
+.searchDot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--text-primary);
+  border-radius: 50%;
+  margin-right: var(--spacing-4);
+}
+
+.searchText {
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+}

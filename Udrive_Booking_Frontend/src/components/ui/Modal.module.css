@@ -4,8 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(15, 23, 42, 0.7); /* slate-900 with opacity */
-  backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.2); /* Much lighter, no blur */
   display: flex;
   align-items: center;
   justify-content: center;

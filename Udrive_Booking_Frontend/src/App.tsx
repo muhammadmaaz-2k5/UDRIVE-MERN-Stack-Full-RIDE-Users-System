@@ -6,6 +6,7 @@ import { Register } from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { RiderDashboard } from './pages/RiderDashboard';
+import { Settings } from './pages/Settings';
 import { useAuthStore } from './store/useAuthStore';
 
 const App: React.FC = () => {
@@ -28,6 +29,10 @@ const App: React.FC = () => {
       <Route path="/register" element={<Register />} />
 
       {/* Protected Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+
       <Route element={<ProtectedRoute allowedRole="customer" />}>
         <Route path="/customer-dashboard" element={<CustomerDashboard />} />
       </Route>

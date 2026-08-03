@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { useRideStore, Ride } from '../store/useRideStore';
+import { useRideStore, type Ride } from '../store/useRideStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { initSocket, getSocket } from '../services/socket';
 import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loader } from '../components/ui/Loader';
-import { MapPin, Navigation, Car, Bike, X } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
+import { MapPin, Navigation, Car, Bike, X, Settings } from 'lucide-react';
 import styles from './CustomerDashboard.module.css';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker as GoogleMarker } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker as LeafletMarker } from 'react-leaflet';
+import L from 'leaflet';
 
 const center = { lat: 40.7128, lng: -74.0060 }; // Default to NY
 
@@ -19,15 +24,24 @@ const vehicles = [
   { id: 'cabPremium', name: 'Premium', price: 25, icon: Car },
 ];
 
+const customIcon = new L.Icon({
+  iconUrl: '/car-icon.svg',
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+});
+
 export const CustomerDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user, accessToken } = useAuthStore();
   const { currentRide, setCurrentRide } = useRideStore();
+  const { mapProvider } = useSettingsStore();
   
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('cabEconomy');
   const [isLoading, setIsLoading] = useState(false);
   const [riderLocation, setRiderLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -104,6 +118,7 @@ export const CustomerDashboard: React.FC = () => {
       if (socket) {
         socket.emit('searchrider', res.ride._id);
       }
+      setIsBookingModalOpen(false);
     } catch (error) {
       console.error('Failed to create ride:', error);
     } finally {
@@ -113,27 +128,48 @@ export const CustomerDashboard: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <button className={styles.settingsButton} onClick={() => navigate('/settings')}>
+        <Settings size={20} />
+      </button>
+
       <div className={styles.mapContainer}>
-        {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={riderLocation || center}
-            zoom={14}
-            options={{
-              disableDefaultUI: true,
-              styles: [
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-              ]
-            }}
-          >
-            {riderLocation && (
-              <Marker position={riderLocation} icon={{ url: '/car-icon.svg', scaledSize: new window.google.maps.Size(40, 40) }} />
-            )}
-          </GoogleMap>
+        {mapProvider === 'google' ? (
+          isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={riderLocation || center}
+              zoom={14}
+              options={{
+                disableDefaultUI: true,
+                styles: [
+                  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+                  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+                  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                ]
+              }}
+            >
+              {riderLocation && (
+                <GoogleMarker position={riderLocation} icon={{ url: '/car-icon.svg', scaledSize: new window.google.maps.Size(40, 40) }} />
+              )}
+            </GoogleMap>
+          ) : (
+            <div className={styles.mapPlaceholder}>Loading Google Maps...</div>
+          )
         ) : (
-          <div className={styles.mapPlaceholder}>Loading Map...</div>
+          <MapContainer 
+            center={riderLocation ? [riderLocation.lat, riderLocation.lng] : [center.lat, center.lng]} 
+            zoom={14} 
+            style={{ width: '100%', height: '100%', background: 'var(--bg-primary)' }}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            />
+            {riderLocation && (
+              <LeafletMarker position={[riderLocation.lat, riderLocation.lng]} icon={customIcon} />
+            )}
+          </MapContainer>
         )}
       </div>
 
@@ -160,46 +196,51 @@ export const CustomerDashboard: React.FC = () => {
             )}
           </div>
         ) : (
-          <form className={styles.form} onSubmit={handleCreateRide}>
-            <h2 className={styles.title}>Where to?</h2>
-            
-            <Input 
-              placeholder="Pickup Location" 
-              value={pickup}
-              onChange={(e) => setPickup(e.target.value)}
-              required
-            />
-            
-            <Input 
-              placeholder="Destination" 
-              value={dropoff}
-              onChange={(e) => setDropoff(e.target.value)}
-              required
-            />
-
-            <div className={styles.vehicleSelection}>
-              {vehicles.map((v) => {
-                const Icon = v.icon;
-                return (
-                  <div 
-                    key={v.id} 
-                    className={`${styles.vehicleCard} ${selectedVehicle === v.id ? styles.selected : ''}`}
-                    onClick={() => setSelectedVehicle(v.id)}
-                  >
-                    <Icon size={24} color={selectedVehicle === v.id ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
-                    <span className={styles.vehicleName}>{v.name}</span>
-                    <span className={styles.vehiclePrice}>${v.price}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <Button type="submit" fullWidth isLoading={isLoading}>
-              Request Ride
-            </Button>
-          </form>
+          <div className={styles.searchTrigger} onClick={() => setIsBookingModalOpen(true)}>
+            <div className={styles.searchDot} />
+            <span className={styles.searchText}>Where to?</span>
+          </div>
         )}
       </div>
+
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Where to?">
+        <form className={styles.form} onSubmit={handleCreateRide}>
+          <Input 
+            placeholder="Pickup Location" 
+            value={pickup}
+            onChange={(e) => setPickup(e.target.value)}
+            required
+          />
+          
+          <Input 
+            placeholder="Destination" 
+            value={dropoff}
+            onChange={(e) => setDropoff(e.target.value)}
+            required
+          />
+
+          <div className={styles.vehicleSelection}>
+            {vehicles.map((v) => {
+              const Icon = v.icon;
+              return (
+                <div 
+                  key={v.id} 
+                  className={`${styles.vehicleCard} ${selectedVehicle === v.id ? styles.selected : ''}`}
+                  onClick={() => setSelectedVehicle(v.id)}
+                >
+                  <Icon size={24} color={selectedVehicle === v.id ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
+                  <span className={styles.vehicleName}>{v.name}</span>
+                  <span className={styles.vehiclePrice}>${v.price}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <Button type="submit" fullWidth isLoading={isLoading}>
+            Request Ride
+          </Button>
+        </form>
+      </Modal>
     </div>
   );
 };
