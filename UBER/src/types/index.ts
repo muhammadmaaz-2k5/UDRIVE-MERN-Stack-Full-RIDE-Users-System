@@ -128,5 +128,5 @@ export interface CallSignal {
 
 export const DEFAULT_CENTER: LatLng = { lat: 24.8607, lng: 67.0011 };
 export const DEFAULT_CITY = "Karachi";
-export const SEARCH_RADIUS_KM = 60;
-export const NEARBY_RADIUS_KM = 6;
+export const SEARCH_RADIUS_KM = 200;
+export const NEARBY_RADIUS_KM = 200;
