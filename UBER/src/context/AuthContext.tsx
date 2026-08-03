@@ -5,12 +5,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/types";
 
 interface AuthState {
-  session: Session | null;
+  session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
   role: Role | null;
@@ -24,69 +24,63 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    session: null,
-    profile: null,
-    loading: true,
-    role: null,
-  });
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut: clerkSignOut } = useClerkAuth();
 
-  async function loadProfile(session: Session | null) {
-    if (!session?.user) {
-      setState({ session: null, profile: null, loading: false, role: null });
-      return;
-    }
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    setLoadingProfile(true);
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .maybeSingle();
 
-    if (error) {
-      setState({
-        session,
-        profile: null,
-        loading: false,
-        role: null,
-      });
-      return;
+    if (!error && data) {
+      setProfile(data as Profile);
+    } else {
+      setProfile(null);
     }
-    setState({
-      session,
-      profile: data as Profile | null,
-      loading: false,
-      role: (data as Profile | null)?.role ?? null,
-    });
-  }
+    setLoadingProfile(false);
+  };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      loadProfile(data.session);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        await loadProfile(session);
-      })();
-    });
-
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  const refreshProfile = async () => {
-    if (state.session) await loadProfile(state.session);
-  };
+    if (isLoaded) {
+      if (isSignedIn && user) {
+        (window as any).Clerk?.session?.getToken({ template: 'supabase' }).then((token: string | null) => {
+          if (token) supabase.realtime.setAuth(token);
+          refreshProfile();
+        });
+      } else {
+        supabase.realtime.setAuth(null as any);
+        setProfile(null);
+        setLoadingProfile(false);
+      }
+    }
+  }, [isLoaded, isSignedIn, user]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setState({ session: null, profile: null, loading: false, role: null });
+    await clerkSignOut();
+    setProfile(null);
   };
+
+  // The app is loading if Clerk is still initializing OR if the user is signed in but we haven't fetched their profile yet.
+  const loading = !isLoaded || (isSignedIn && loadingProfile);
+  const session = isSignedIn && user ? { user: { id: user.id } } : null;
 
   return (
     <AuthContext.Provider
-      value={{ ...state, refreshProfile, signOut }}
+      value={{
+        session,
+        profile,
+        loading,
+        role: profile?.role ?? null,
+        refreshProfile,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
