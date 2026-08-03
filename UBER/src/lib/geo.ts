@@ -73,12 +73,34 @@ export function formatDateTime(iso: string): string {
 
 export function decodeGeogPoint(geog: any): LatLng | null {
   if (!geog) return null;
+  
   // Handle GeoJSON format (default in newer PostgREST versions)
   if (typeof geog === "object" && geog.type === "Point" && Array.isArray(geog.coordinates)) {
     return { lng: geog.coordinates[0], lat: geog.coordinates[1] };
   }
-  // Handle WKT string format
+  
   if (typeof geog === "string") {
+    // 1. Handle WKB Hex String (default in older PostgREST or when cast to text)
+    // EWKB points start with 01 (little endian) or 00 (big endian)
+    if (/^[0-9a-fA-F]{40,}$/.test(geog)) {
+      try {
+        const bytes = geog.match(/[\da-fA-F]{2}/g)!.map((h) => parseInt(h, 16));
+        const view = new DataView(new Uint8Array(bytes).buffer);
+        const isLittleEndian = view.getUint8(0) === 1;
+        const type = view.getUint32(1, isLittleEndian);
+        let offset = 5;
+        // Check for SRID flag (0x20000000)
+        if (type & 0x20000000) offset += 4;
+        
+        const lng = view.getFloat64(offset, isLittleEndian);
+        const lat = view.getFloat64(offset + 8, isLittleEndian);
+        return { lng, lat };
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // 2. Handle WKT string format: "POINT(lng lat)"
     const match = geog.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
     if (match) {
       return { lng: parseFloat(match[1]), lat: parseFloat(match[2]) };
