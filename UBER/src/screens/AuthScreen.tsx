@@ -39,8 +39,9 @@ export function AuthScreen() {
       return;
     }
     setLoading(true);
+    const cleanEmail = email.trim();
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     });
     if (error) {
@@ -63,8 +64,9 @@ export function AuthScreen() {
       return;
     }
     setLoading(true);
+    const cleanEmail = email.trim();
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: {
         data: { full_name: fullName, role, phone },
