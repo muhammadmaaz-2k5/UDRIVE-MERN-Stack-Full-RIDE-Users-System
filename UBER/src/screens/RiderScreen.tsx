@@ -142,6 +142,7 @@ export function RiderScreen() {
         .order("created_at", { ascending: true })
         .limit(10);
 
+      console.log("Rider fetchIncoming fetched:", { data, error });
       if (error || !data || cancelled) return;
 
       // Filter by distance to pickup
@@ -156,6 +157,7 @@ export function RiderScreen() {
         .filter((x): x is IncomingRide => x !== null)
         .sort((a, b) => (a._distance ?? 0) - (b._distance ?? 0));
 
+      console.log("Rider fetchIncoming relevant:", relevant);
       setIncomingRides(relevant);
     }
 
