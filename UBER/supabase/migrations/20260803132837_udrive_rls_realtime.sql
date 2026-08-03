@@ -44,7 +44,7 @@ CREATE POLICY "update_own_profile" ON profiles FOR UPDATE
 -- rides
 DROP POLICY IF EXISTS "select_rides_as_party" ON rides;
 CREATE POLICY "select_rides_as_party" ON rides FOR SELECT
-  TO authenticated USING (auth.uid() = customer_id OR auth.uid() = rider_id);
+  TO authenticated USING (auth.uid() = customer_id OR auth.uid() = rider_id OR status = 'SEARCHING_FOR_RIDER');
 
 DROP POLICY IF EXISTS "insert_own_ride" ON rides;
 CREATE POLICY "insert_own_ride" ON rides FOR INSERT
