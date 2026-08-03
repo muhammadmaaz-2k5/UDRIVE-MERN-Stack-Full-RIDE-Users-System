@@ -79,7 +79,7 @@ export function useRideTracking(rideId: string | null) {
     async function loadPos() {
       const { data } = await supabase
         .from("rider_locations")
-        .select("position")
+        .select("position::text, heading, on_duty, updated_at")
         .eq("rider_id", riderId!)
         .maybeSingle();
       if (data) {

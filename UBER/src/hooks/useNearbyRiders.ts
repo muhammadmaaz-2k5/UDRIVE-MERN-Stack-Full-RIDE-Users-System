@@ -22,9 +22,10 @@ export function useNearbyRiders(center: LatLng | null, radiusKm = 6) {
   const fetchRiders = useCallback(async () => {
     const { data, error } = await supabase
       .from("rider_locations")
-      .select("rider_id, position, heading, on_duty, updated_at")
+      .select("rider_id, position::text, heading, on_duty, updated_at")
       .eq("on_duty", true);
 
+    console.log("useNearbyRiders fetched:", { data, error });
     if (error || !data) {
       setLoading(false);
       return;
@@ -49,6 +50,7 @@ export function useNearbyRiders(center: LatLng | null, radiusKm = 6) {
       .filter((x) => !c || x.distanceKm <= radiusKm)
       .sort((a, b) => a.distanceKm - b.distanceKm);
 
+    console.log("useNearbyRiders decoded:", decoded);
     setRiders(decoded);
     setLoading(false);
   }, [radiusKm]);
